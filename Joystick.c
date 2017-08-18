@@ -54,12 +54,12 @@ void SetupHardware(void) {
 	clock_prescale_set(clock_div_1);
 	// We can then initialize our hardware and peripherals, including the USB stack.
 
-	// Both PORTD and PORTB will be used for handling the buttons and stick.
-	DDRD  &= ~0xFF;
-	PORTD |=  0xFF;
-
-	DDRB  &= ~0xFF;
-	PORTB |=  0xFF;
+	// Both PORTD and PORTB will be used for the LED and optional buzzer.
+	DDRD  = 0xFF; //Teensy uses PORTD
+	PORTD =  0x0;
+                  //We'll just flash all pins on both ports since
+	DDRB  = 0xFF; //they aren't doing anything else and the UNO R3 uses PORTB.
+	PORTB =  0x0; //The ATmega328P on the UNO will be resetting, so unplug it?
 	// The USB stack should be initialized last.
 	USB_Init();
 }
@@ -183,6 +183,7 @@ int echo_wait_time = 0;
 int report_count = 0;
 int xpos = 0;
 int ypos = 0;
+int portsval = 0;
 
 // Prepare the next report for the host.
 void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
@@ -192,7 +193,7 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	ReportData->LX = STICK_CENTER;
 	ReportData->LY = STICK_CENTER;
 	ReportData->RX = STICK_CENTER;
-	ReportData->RY = STICK_CENTER;	
+	ReportData->RY = STICK_CENTER;
 	ReportData->HAT = HAT_CENTER;
 
 	if (echo_wait_time > ECHO_DELAY_MS)
@@ -202,13 +203,13 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 		Delay_MS(ECHO_DELAY_MS);
 		echo_wait_time -= ECHO_DELAY_MS;
 		return;
-	}		
+	}
 
 	switch (state)
 	{
 		case SYNC_CONTROLLER:
 			report_count++;
-	
+
 			if (report_count % 10 == 0 && report_count < 40)
 			{
 				ReportData->Button |= SWITCH_L | SWITCH_R;
@@ -218,8 +219,8 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 				report_count = 0;
 				ReportData->Button |= SWITCH_A;
 				state = SYNC_POSITION;
-			}		
-			break;			
+			}
+			break;
 		case SYNC_POSITION:
 			report_count++;
 
@@ -228,16 +229,16 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 				report_count = 0;
 				ReportData->HAT = HAT_BOTTOM;
 				xpos = 0;
-				ypos = 0;								
+				ypos = 0;
 				state = PRINT_DOT;
 			}
 			else
 			{
 				// Moving faster with LX/LY
 				ReportData->LX = STICK_MIN;
-				ReportData->LY = STICK_MIN;			
+				ReportData->LY = STICK_MIN;
 			}
-			break;		
+			break;
 		case PRINT_DOT:
 			if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
 				ReportData->Button |= SWITCH_A;
@@ -274,10 +275,14 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 				// It looks like the device filters out a faster LX move here, without touching LY...
 				ReportData->HAT = HAT_LEFT;
 			}
-			break;				
+			break;
 		case DONE:
+			portsval = ~portsval;
+			PORTD = portsval; //flash LED(s) and sound buzzer if attached
+			PORTB = portsval;
+			_delay_ms(250);
 			return;
 	}
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
-	echo_wait_time = ECHO_WAIT_TIME_MS;	
+	echo_wait_time = ECHO_WAIT_TIME_MS;
 }
