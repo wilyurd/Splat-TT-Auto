@@ -14,7 +14,7 @@ For my own personal use, I repurposed Switch-Fightstick to output a set sequence
 #### Printing Procedure
 Just press L to select the pixel brush and plug in the controller: it will automatically sync with the console, reset the cursor position and print. In case you see issues with controller conflicts while in docked mode, try using a USB-C to USB-A adapter in handheld mode. Printing currently takes about an hour.
 
-Each line is printed from left to right, top to bottom. Upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the others LEDs will not.
+Each line is printed from left to right, top to bottom. Upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not.
 
 This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro. 
 
