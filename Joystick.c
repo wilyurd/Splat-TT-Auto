@@ -54,12 +54,16 @@ void SetupHardware(void) {
 	clock_prescale_set(clock_div_1);
 	// We can then initialize our hardware and peripherals, including the USB stack.
 
-	// Both PORTD and PORTB will be used for the LED and optional buzzer.
+	#ifdef ALERT_WHEN_DONE
+	// Both PORTD and PORTB will be used for the optional LED flashing and buzzer.
+	#warning LED and Buzzer functionality enabled. All pins on both PORTB and \
+PORTD will toggle when printing is done.
 	DDRD  = 0xFF; //Teensy uses PORTD
 	PORTD =  0x0;
-                  //We'll just flash all pins on both ports since
-	DDRB  = 0xFF; //they aren't doing anything else and the UNO R3 uses PORTB.
+                  //We'll just flash all pins on both ports since the UNO R3
+	DDRB  = 0xFF; //uses PORTB. Micro can use either or, but both gives us 2 LEDs
 	PORTB =  0x0; //The ATmega328P on the UNO will be resetting, so unplug it?
+	#endif
 	// The USB stack should be initialized last.
 	USB_Init();
 }
@@ -277,10 +281,12 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 			}
 			break;
 		case DONE:
+			#ifdef ALERT_WHEN_DONE
 			portsval = ~portsval;
 			PORTD = portsval; //flash LED(s) and sound buzzer if attached
 			PORTB = portsval;
 			_delay_ms(250);
+			#endif
 			return;
 	}
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
