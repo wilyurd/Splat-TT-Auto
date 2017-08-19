@@ -292,3 +292,4 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
 	echo_wait_time = ECHO_WAIT_TIME_MS;
 }
+
