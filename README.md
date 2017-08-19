@@ -18,6 +18,8 @@ Each line is printed from left to right, top to bottom.
 
 Optionally, upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make CC_FLAGS=-DALERT_WHEN_DONE` when building the firmware. Just be aware that all pins on both PORTB and PORTD are toggled. Keep this in mind if any peripherals are attached, say from some other project.
 
+Optionally, upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make CC_FLAGS=-DALERT_WHEN_DONE` when building the firmware. Just be aware that all pins on both PORTB and PORTD are toggled. Keep this in mind if any peripherals are attached, say from some other project.
+
 This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro.
 
 #### Compiling and Flashing onto the Teensy 2.0++
