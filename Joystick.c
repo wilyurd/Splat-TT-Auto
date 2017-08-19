@@ -26,7 +26,7 @@ these buttons for our use.
 
 #include "Joystick.h"
 
-const uint8_t image_data[0x12c1] PROGMEM;
+extern const uint8_t image_data[0x12c1] PROGMEM;
 
 // Main entry point.
 int main(void) {
@@ -179,7 +179,7 @@ typedef enum {
 } State_t;
 State_t state = SYNC_CONTROLLER;
 
-#define ECHO_WAIT_TIME_MS 40
+#define ECHO_WAIT_TIME_MS 60
 #define ECHO_DELAY_MS 10
 USB_JoystickReport_Input_t last_report;
 int echo_wait_time = 0;
