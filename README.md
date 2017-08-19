@@ -12,11 +12,13 @@ Unlike the Wii U, which handles these controllers on a 'per-game' basis, the Swi
 For my own personal use, I repurposed Switch-Fightstick to output a set sequence of inputs to systematically print Splatoon posts. This works by using the smallest size pen and D-pad inputs to plot out each pixel one-by-one.
 
 #### Printing Procedure
-Just press L to select the pixel brush and plug in the controller: it will automatically sync with the console, reset the cursor position and print. In case you see issues with controller conflicts while in docked mode, try using a USB-C to USB-A adapter in handheld mode. Printing currently takes about an hour.
+Just press L to select the pixel pen and plug in the controller: it will automatically sync with the console, reset the cursor position and print. In case you see issues with controller conflicts while in docked mode, try using a USB-C to USB-A adapter in handheld mode. Printing currently takes about an hour.
 
-Each line is printed from left to right, top to bottom. Upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not.
+Each line is printed from left to right, top to bottom.
 
-This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro. 
+Optionally, upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make CC_FLAGS=-DALERT_WHEN_DONE` when building the firmware. Just be aware that all pins on both PORTB and PORTD are toggled. Keep this in mind if any peripherals are attached, say from some other project.
+
+This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro.
 
 #### Compiling and Flashing onto the Teensy 2.0++
 Go to the Teensy website and download/install the [Teensy Loader application](https://www.pjrc.com/teensy/loader.html). Then, follow their instructions on installing the [GCC Compiler and Tools](https://www.pjrc.com/teensy/gcc.html). (Note for Mac users - the AVR MacPack is now called AVR CrossPack. If that does not work, you can try installing avr-gcc with brew.) Next, you need to grab the LUFA library. You can download it in a zipped folder at the bottom of [this page](http://www.fourwalledcubicle.com/LUFA.php). Unzip the folder, rename it `LUFA`, and place it where you like. Then, download or clone the contents of this repository onto your computer. Next, you'll need to make sure the `LUFA_PATH` inside of the `makefile` points to the `LUFA` subdirectory inside your `LUFA` directory. My `Switch-Fightstick` directory is in the same directory as my `LUFA` directory, so I set `LUFA_PATH = ../LUFA/LUFA`.
@@ -39,7 +41,9 @@ If you ever need to use your Arduino Micro with Arduino IDE again, the process i
 The Arduino Leonardo is theoretically compatible, but has not been tested. It also has the ATmega32u4, and is layed out somewhat similar to the Micro.
 
 #### Attaching the optional buzzer
-A suitable 5V buzzer may be attached to any of the available pins on PORTB or PORTD and will begin sounding once printing has finished. Reference section 31 of [the AT90USB1286 datasheet](http://www.atmel.com/images/doc7593.pdf) for maximum current specs. Pin 6 on the Teensy is already used for the LED and it draws around 3mA when fully lit. It is recommended to connect the buzzer to another pin. Do not bridge pins for more current.
+A suitable 5V buzzer may be attached to any of the available pins on PORTB or PORTD. When compiled with `make CC_FLAGS=-DALERT_WHEN_DONE`, it will begin sounding once printing has finished. See above warning about PORTB and PORTD. Reference section 31 of [the AT90USB1286 datasheet](http://www.atmel.com/images/doc7593.pdf) for maximum current specs.
+
+Pin 6 on the Teensy is already used for the LED and it draws around 3mA when fully lit. It is recommended to connect the buzzer to another pin. Do not bridge pins for more current.
 
 For the Arduino UNO, the easiest place to connect the buzzer is to any pin of JP2, or pins 1, 3, or 4 of ICSP1, next to JP2. Refer to section 29 of [the ATmega16u2 datasheet](http://www.atmel.com/Images/Atmel-7766-8-bit-AVR-ATmega16U4-32U4_Datasheet.pdf) for maximum current specs. Do not bridge pins for more current.
 
@@ -55,6 +59,12 @@ Using the supplied sample image, splatoonpattern.png:
 $ python png2c.py splatoonpattern.png
 ```
 Substitute your own .png image to generate the `image.c` file necessary to print. Just make sure your image is in the `Switch-Fightstick` directory.
+
+To generate an inverted colormap of the image:
+
+```
+$ python png2c.py -i splatoonpattern.png
+```
 
 #### What the dither?
 As previously mentioned, png2c.py will dither the input image if you supply an image that is not already made up of only black and white pixels. Say you want to print this bomb image you created...
