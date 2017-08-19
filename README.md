@@ -16,9 +16,7 @@ Just press L to select the pixel pen and plug in the controller: it will automat
 
 Each line is printed from left to right, top to bottom.
 
-Optionally, upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make CC_FLAGS=-DALERT_WHEN_DONE` when building the firmware. Just be aware that all pins on both PORTB and PORTD are toggled. Keep this in mind if any peripherals are attached, say from some other project.
-
-Optionally, upon completion, the Teensy's LED will begin to flash. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make CC_FLAGS=-DALERT_WHEN_DONE` when building the firmware. Just be aware that all pins on both PORTB and PORTD are toggled. Keep this in mind if any peripherals are attached, say from some other project.
+Optionally, upon completion, the Teensy's LED will begin flashing. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make with-alert` when building the firmware. All pins on both PORTB and PORTD are toggled! Beware of possible interactions with any attached peripherals, say from another project.
 
 This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro.
 
@@ -43,7 +41,7 @@ If you ever need to use your Arduino Micro with Arduino IDE again, the process i
 The Arduino Leonardo is theoretically compatible, but has not been tested. It also has the ATmega32u4, and is layed out somewhat similar to the Micro.
 
 #### Attaching the optional buzzer
-A suitable 5V buzzer may be attached to any of the available pins on PORTB or PORTD. When compiled with `make CC_FLAGS=-DALERT_WHEN_DONE`, it will begin sounding once printing has finished. See above warning about PORTB and PORTD. Reference section 31 of [the AT90USB1286 datasheet](http://www.atmel.com/images/doc7593.pdf) for maximum current specs.
+A suitable 5V buzzer may be attached to any of the available pins on PORTB or PORTD. When compiled with `make with-alert`, it will begin sounding once printing has finished. See above warning about PORTB and PORTD. Reference section 31 of [the AT90USB1286 datasheet](http://www.atmel.com/images/doc7593.pdf) for maximum current specs.
 
 Pin 6 on the Teensy is already used for the LED and it draws around 3mA when fully lit. It is recommended to connect the buzzer to another pin. Do not bridge pins for more current.
 
