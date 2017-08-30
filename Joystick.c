@@ -115,7 +115,7 @@ void HID_Task(void) {
 			// We'll then take in that data, setting it up in our storage.
 			while(Endpoint_Read_Stream_LE(&JoystickOutputData, sizeof(JoystickOutputData), NULL) != ENDPOINT_RWSTREAM_NoError);
 			// At this point, we can react to this data.
-			
+
 			// However, since we're not doing anything with this data, we abandon it.
 		}
 		// Regardless of whether we reacted to the data, we acknowledge an OUT packet on this endpoint.
@@ -142,7 +142,7 @@ typedef enum {
 	SYNC_CONTROLLER,
 	SYNC_POSITION,
 	STOP_X,
-	STOP_Y,	
+	STOP_Y,
 	MOVE_X,
 	MOVE_Y,
 	DONE
@@ -166,7 +166,7 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 	ReportData->LX = STICK_CENTER;
 	ReportData->LY = STICK_CENTER;
 	ReportData->RX = STICK_CENTER;
-	ReportData->RY = STICK_CENTER;	
+	ReportData->RY = STICK_CENTER;
 	ReportData->HAT = HAT_CENTER;
 
 	// Repeat ECHOES times the last report
@@ -222,10 +222,10 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 			break;
 		case STOP_Y:
 			if (ypos < 120 - 1)
-				state = MOVE_Y;	
+				state = MOVE_Y;
 			else
 				state = DONE;
-			break;			
+			break;
 		case MOVE_X:
 			if (ypos % 2)
 			{
@@ -238,11 +238,11 @@ void GetNextReport(USB_JoystickReport_Input_t* const ReportData) {
 				xpos++;
 			}
 			if (xpos > 0 && xpos < 320 - 1)
-				state = STOP_X;	
+				state = STOP_X;
 			else
 				state = STOP_Y;
 			break;
-		case MOVE_Y:		
+		case MOVE_Y:
 			ReportData->HAT = HAT_BOTTOM;
 			ypos++;
 			state = STOP_X;
