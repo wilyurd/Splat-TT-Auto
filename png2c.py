@@ -53,7 +53,7 @@ def main(argv):
 
        str_out += hex(val) + ", "         # append hexidecimal bytes
                                           # to the output .c array
-    str_out += "0x0};"                    # of bytes
+    str_out += "0x0};\n"                  # of bytes
 
     with open('image.c', 'w') as f:       # save output into image.c
       f.write(str_out)
