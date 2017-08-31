@@ -44,4 +44,8 @@ def usage():
   print("To convert to an inverted image.c: bin2c.py -i yourImage.data")
 
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  if len(sys.argv[1:]) == 0:
+    usage()
+    sys.exit
+  else:
+    main(sys.argv[1:])
