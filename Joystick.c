@@ -149,13 +149,35 @@ void HID_Task(void)
 typedef enum {
 	SYNC_CONTROLLER,
 	SYNC_POSITION,
+	ZIG_ZAG_RIGHT,
+	ZIG_ZAG_LEFT,
 	MOVE,
 	STOP,
 	DONE
 } State_t;
 State_t state = SYNC_CONTROLLER;
 
+// Repeat ECHOES times the last sent report.
+//
+// This is value is affected by several factors:
+// - The descriptors *.PollingIntervalMS value.
+// - The Switch readiness to accept reports (driven by the Endpoint_IsINReady() function,
+//   it looks to be 8 ms).
+// - The Switch screen refresh rate (it looks that anything that would update the screen
+//   at more than 30 fps triggers pixel skipping).
+#ifdef ZIG_ZAG_PRINTING
+#define ECHOES 4
+// In this case we will send 641 moves and 1 stop every 2 lines, using 5 reports for
+// each send, in around 25 s (thus 8 ms per report), updating the screen every 40 ms.
+#else
 #define ECHOES 2
+// In this case we will send 320 moves and 320 stops per line, using 3 reports for
+// each send, in around 15 s (thus 8 ms per report), updating the screen every 48 ms.
+
+// This should be equivalent to setting POLLING_MS to 24, and ECHOES to 0, but this
+// combination doesn't work... it skip pixels (setting POLLING_MS to 32 works fine,
+// but it takes 20 s to print a line).
+#endif
 int echoes = 0;
 USB_JoystickReport_Input_t last_report;
 
@@ -164,7 +186,47 @@ int xpos = 0;
 int ypos = 0;
 int portsval = 0;
 
-#define ms_2_count(ms) (ms / ECHOES / (POLLING_MS / 8 * 8))
+#define max(a, b) (a > b ? a : b)
+#define ms_2_count(ms) (ms / ECHOES / (max(POLLING_MS, 8) / 8 * 8))
+
+bool complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData, uint8_t move)
+{
+	// This function move the dot, switching between two consecutive lines, following
+	// the move pattern below while moving to the right:
+	//
+	//    3  4 ... N-5  N-4  N-2
+	// 1  2  5 ... N-6    N  N-1
+	//                  N+1  N+2
+	//
+	// and its specular one while moving to the left:
+	//
+	// N-2  N-4  N-5 ... 4  3
+	// N-1    N  N-6 ... 5  2  1
+	// N+2  N+1
+	//
+	// In each pattern, the N-4 and N-2 moves are the same, thus we need a stop in N-3,
+	// to avoid the acceleration trigger by two consecutive moves in the same direction.
+	if (command_count < 642)
+	{
+		if (command_count % 2 == 1)
+			ReportData->HAT = move;
+		else if (command_count % 4 == 0)
+			ReportData->HAT = HAT_BOTTOM;
+		else
+			ReportData->HAT = HAT_TOP;
+		if (command_count == 636)
+			ReportData->HAT = HAT_CENTER;
+		else if (command_count == 638)
+			ReportData->HAT = HAT_BOTTOM;
+		else if (command_count == 639)
+			ReportData->HAT = move == HAT_RIGHT ? HAT_LEFT : HAT_RIGHT;
+		command_count++;
+		return false;
+	}
+
+	command_count = 0;
+	return true;
+}
 
 // Prepare the next report for the host
 void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
@@ -205,12 +267,16 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		}
 		break;
 	case SYNC_POSITION:
-		if (command_count > ms_2_count(5000))
+		if (command_count > ms_2_count(4000))
 		{
 			command_count = 0;
 			xpos = 0;
 			ypos = 0;
+#ifdef ZIG_ZAG_PRINTING
+			state = ZIG_ZAG_RIGHT;
+#else
 			state = STOP;
+#endif
 		}
 		else
 		{
@@ -218,10 +284,18 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			ReportData->LX = STICK_MIN;
 			ReportData->LY = STICK_MIN;
 			// Clear the screen
-			if (command_count == ms_2_count(2000) || command_count == ms_2_count(4000))
+			if (command_count == ms_2_count(1500) || command_count == ms_2_count(3000))
 				ReportData->Button |= SWITCH_MINUS;
 			command_count++;
 		}
+		break;
+	case ZIG_ZAG_RIGHT:
+		if (complete_zig_zag_pattern(ReportData, HAT_RIGHT))
+			state = ZIG_ZAG_LEFT;
+		break;
+	case ZIG_ZAG_LEFT:
+		if (complete_zig_zag_pattern(ReportData, HAT_LEFT))
+			state = ZIG_ZAG_RIGHT;
 		break;
 	case MOVE:
 		if (xpos == 0 && ypos % 2 == 1 || xpos == 319 && ypos % 2 == 0)
