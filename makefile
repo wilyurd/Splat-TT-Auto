@@ -20,7 +20,8 @@ OPTIMIZATION = s
 TARGET       = Joystick
 SRC          = $(TARGET).c Descriptors.c image.c $(LUFA_SRC_USB)
 LUFA_PATH    = ../LUFA/LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -IConfig/
+# Remove the -DZIG_ZAG_PRINTING below to compile with basic printing pattern (printing will take 30 m vs 25 m)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -IConfig/ -DZIG_ZAG_PRINTING
 LD_FLAGS     =
 
 # Default target
