@@ -149,8 +149,7 @@ void HID_Task(void)
 typedef enum {
 	SYNC_CONTROLLER,
 	SYNC_POSITION,
-	ZIG_ZAG_RIGHT,
-	ZIG_ZAG_LEFT,
+	ZIG_ZAG,
 	MOVE,
 	STOP,
 	DONE
@@ -189,23 +188,32 @@ int portsval = 0;
 #define max(a, b) (a > b ? a : b)
 #define ms_2_count(ms) (ms / ECHOES / (max(POLLING_MS, 8) / 8 * 8))
 
-bool complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData, uint8_t move)
+void complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData)
 {
-	// This function moves the dot, switching between two consecutive lines, following
+	// This function move the dot, switching between two consecutive lines, following
 	// the move pattern below while moving to the right:
 	//
-	//    3  4 ... N-5  N-4  N-2
-	// 1  2  5 ... N-6    N  N-1
-	//                  N+1  N+2
+	//    3  4 ... N-5  N-4  N-1
+	// 1  2  5 ... N-6  N-3  N-2 <- (N, N+1)
+	//                       N+2
 	//
 	// and its specular one while moving to the left:
 	//
-	// N-2  N-4  N-5 ... 4  3
-	// N-1    N  N-6 ... 5  2  1
-	// N+2  N+1
+	//             N-1  N-4  N-5 ... 4  3
+	// (N, N+1) -> N-2  N-3  N-6 ... 5  2  1
+	//             N+2
 	//
-	// In each pattern, the N-4 and N-2 moves are the same, thus we need a stop in N-3,
-	// to avoid the acceleration trigger by two consecutive moves in the same direction.
+	// In each pattern, the N and N+2 moves are the same, thus we need a stop in N+1,
+	// to avoid the acceleration triggered by two consecutive moves done in the same
+	// direction. This pattern pass on the same pixel 3 times (N-2, N and N+1), but
+	// is the easiest to check that I found.
+	uint8_t move;
+
+	if (ypos % 4 < 2)
+		move = HAT_RIGHT;
+	else
+		move = HAT_LEFT;
+
 	if (command_count < 642)
 	{
 		if (command_count % 2 == 1)
@@ -214,18 +222,16 @@ bool complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData, uint
 			ReportData->HAT = HAT_BOTTOM;
 		else
 			ReportData->HAT = HAT_TOP;
-		if (command_count == 636)
+		if (command_count == 640)
 			ReportData->HAT = HAT_CENTER;
-		else if (command_count == 638)
+		else if (command_count == 639 || command_count == 641)
 			ReportData->HAT = HAT_BOTTOM;
-		else if (command_count == 639)
-			ReportData->HAT = move == HAT_RIGHT ? HAT_LEFT : HAT_RIGHT;
 		command_count++;
-		return false;
+		return;
 	}
 
 	command_count = 0;
-	return true;
+	return;
 }
 
 // Prepare the next report for the host
@@ -273,7 +279,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			xpos = 0;
 			ypos = 0;
 #ifdef ZIG_ZAG_PRINTING
-			state = ZIG_ZAG_RIGHT;
+			state = ZIG_ZAG;
 #else
 			state = STOP;
 #endif
@@ -289,13 +295,10 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			command_count++;
 		}
 		break;
-	case ZIG_ZAG_RIGHT:
-		if (complete_zig_zag_pattern(ReportData, HAT_RIGHT))
-			state = ZIG_ZAG_LEFT;
-		break;
-	case ZIG_ZAG_LEFT:
-		if (complete_zig_zag_pattern(ReportData, HAT_LEFT))
-			state = ZIG_ZAG_RIGHT;
+	case ZIG_ZAG:
+		complete_zig_zag_pattern(ReportData);
+		if (ypos > 119)
+			state = DONE;
 		break;
 	case MOVE:
 		if ((xpos == 0 && ypos % 2 == 1) || (xpos == 319 && ypos % 2 == 0))
@@ -308,6 +311,8 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		break;
 	case STOP:
 		state = MOVE;
+		if (ypos > 119)
+			state = DONE;
 		break;
 	case DONE:
 #ifdef ALERT_WHEN_DONE
@@ -331,14 +336,9 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 
 	// Inking
 	if (state != SYNC_CONTROLLER && state != SYNC_POSITION && state != DONE)
-	{
 		if (xpos >= 0 && xpos <= 319 && ypos >= 0 && ypos <= 119)
-		{
 			if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
 				ReportData->Button |= SWITCH_A;
-		}
-		else (state = DONE);
-	}
 
 	// Prepare to echo this report
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
