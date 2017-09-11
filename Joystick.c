@@ -12,7 +12,7 @@ Nintendo Switch. This also works to a limited degree on the PS3.
 
 Since System Update v3.0.0, the Nintendo Switch recognizes the Pokken
 Tournament Pro Pad as a Pro Controller. Physical design limitations prevent
-the Pokken Controller from functioning at zhe same level as the Pro
+the Pokken Controller from functioning at the same level as the Pro
 Controller. However, by default most of the descriptors are there, with the
 exception of Home and Capture. Descriptor modification allows us to unlock
 these buttons for our use.
@@ -159,7 +159,7 @@ State_t state = SYNC_CONTROLLER;
 
 // Repeat ECHOES times the last sent report.
 //
-// This is value is affected by several factors:
+// This value is affected by several factors:
 // - The descriptors *.PollingIntervalMS value.
 // - The Switch readiness to accept reports (driven by the Endpoint_IsINReady() function,
 //   it looks to be 8 ms).
@@ -191,7 +191,7 @@ int portsval = 0;
 
 bool complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData, uint8_t move)
 {
-	// This function move the dot, switching between two consecutive lines, following
+	// This function moves the dot, switching between two consecutive lines, following
 	// the move pattern below while moving to the right:
 	//
 	//    3  4 ... N-5  N-4  N-2
