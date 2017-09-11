@@ -256,7 +256,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		{
 			command_count = 0;
 			state = SYNC_POSITION;
-		}	
+		}
 		else
 		{
 			if (command_count == ms_2_count(500) || command_count == ms_2_count(1000))
@@ -298,7 +298,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			state = ZIG_ZAG_RIGHT;
 		break;
 	case MOVE:
-		if (xpos == 0 && ypos % 2 == 1 || xpos == 319 && ypos % 2 == 0)
+		if ((xpos == 0 && ypos % 2 == 1) || (xpos == 319 && ypos % 2 == 0))
 			ReportData->HAT = HAT_BOTTOM;
 		else if (ypos % 2 == 0)
 			ReportData->HAT = HAT_RIGHT;
@@ -328,14 +328,17 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		ypos--;
 	if (ReportData->HAT == HAT_BOTTOM_RIGHT || ReportData->HAT == HAT_BOTTOM || ReportData->HAT == HAT_BOTTOM_LEFT)
 		ypos++;
-	if (ypos > 119)
-		state = DONE;
 
 	// Inking
 	if (state != SYNC_CONTROLLER && state != SYNC_POSITION && state != DONE)
+	{
 		if (xpos >= 0 && xpos <= 319 && ypos >= 0 && ypos <= 119)
+		{
 			if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
 				ReportData->Button |= SWITCH_A;
+		}
+		else (state = DONE);
+	}
 
 	// Prepare to echo this report
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
