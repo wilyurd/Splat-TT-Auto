@@ -121,7 +121,7 @@ void HID_Task(void)
 			// We'll create a place to store our data received from the host.
 			USB_JoystickReport_Output_t JoystickOutputData;
 			// We'll then take in that data, setting it up in our storage.
-			while (Endpoint_Read_Stream_LE(&JoystickOutputData, sizeof(JoystickOutputData), NULL) != ENDPOINT_RWSTREAM_NoError);
+			Endpoint_Read_Stream_LE(&JoystickOutputData, sizeof(JoystickOutputData), NULL);
 			// At this point, we can react to this data.
 
 			// However, since we're not doing anything with this data, we abandon it.
@@ -140,7 +140,7 @@ void HID_Task(void)
 		// We'll then populate this report with what we want to send to the host.
 		GetNextReport(&JoystickInputData);
 		// Once populated, we can output this data to the host. We do this by first writing the data to the control stream.
-		while (Endpoint_Write_Stream_LE(&JoystickInputData, sizeof(JoystickInputData), NULL) != ENDPOINT_RWSTREAM_NoError);
+		Endpoint_Write_Stream_LE(&JoystickInputData, sizeof(JoystickInputData), NULL);
 		// We then send an IN packet on this endpoint.
 		Endpoint_ClearIN();
 	}
@@ -156,6 +156,9 @@ typedef enum {
 } State_t;
 State_t state = SYNC_CONTROLLER;
 
+// Comment SYNC_TO_30_FPS out for a safer timing when ZIG_ZAG_PRINTING is enabled
+#define SYNC_TO_30_FPS
+
 // Repeat ECHOES times the last sent report.
 //
 // This value is affected by several factors:
@@ -164,23 +167,27 @@ State_t state = SYNC_CONTROLLER;
 //   it looks to be 8 ms).
 // - The Switch screen refresh rate (it looks that anything that would update the screen
 //   at more than 30 fps triggers pixel skipping).
-#ifdef ZIG_ZAG_PRINTING
-#define ECHOES 4
-// In this case we will send 641 moves and 1 stop every 2 lines, using 5 reports for
-// each send, in around 25 s (thus 8 ms per report), updating the screen every 40 ms.
+#if defined(ZIG_ZAG_PRINTING)
+	#if defined(SYNC_TO_30_FPS)
+		// In this case we will send 641 moves and 1 stop every 2 lines, using 4 reports for
+		// each send (done in 32 ms). We will inject an additional report every 6 commands, to
+		// align them to 6 video frames (lasting 200 ms).
+		#define ECHOES 3
+	#else
+		// In this case we will send 641 moves and 1 stop every 2 lines, using 5 reports for
+		// each send, in around 25 s (thus 8 ms per report), updating the screen every 40 ms.
+		#define ECHOES 4
+	#endif
 #else
-#define ECHOES 2
-// In this case we will send 320 moves and 320 stops per line, using 3 reports for
-// each send, in around 15 s (thus 8 ms per report), updating the screen every 48 ms.
-
-// This should be equivalent to setting POLLING_MS to 24, and ECHOES to 0, but this
-// combination doesn't work... it skip pixels (setting POLLING_MS to 32 works fine,
-// but it takes 20 s to print a line).
+	// In this case we will send 320 moves and 320 stops per line, using 3 reports for each
+	// send, in around 15 s (thus 8 ms per report), updating the screen every 48 ms.
+	#define ECHOES 2
 #endif
 int echoes = 0;
 USB_JoystickReport_Input_t last_report;
 
 int command_count = 0;
+int report_count = 0;
 int xpos = 0;
 int ypos = 0;
 int portsval = 0;
@@ -246,6 +253,21 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 	ReportData->RY = STICK_CENTER;
 	ReportData->HAT = HAT_CENTER;
 
+#if defined(ZIG_ZAG_PRINTING) && defined(SYNC_TO_30_FPS)
+	if (state == ZIG_ZAG)
+	{
+		// Inject an additional echo every 192 ms, aligning the command stream to 200 ms (equivalent to 6 video frames)
+		report_count++;
+		if (report_count == 24) // this seems be the best spot to inject the echo...
+		{
+			memcpy(ReportData, &last_report, sizeof(USB_JoystickReport_Input_t));
+			return;
+		}
+		if (report_count == 25) // reset the report count every 25 reports (200 ms)
+			report_count = 0;
+	}
+#endif
+
 	// Repeat ECHOES times the last report
 	if (echoes > 0)
 	{
@@ -278,7 +300,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			command_count = 0;
 			xpos = 0;
 			ypos = 0;
-#ifdef ZIG_ZAG_PRINTING
+#if defined(ZIG_ZAG_PRINTING)
 			state = ZIG_ZAG;
 #else
 			state = STOP;
@@ -324,21 +346,20 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		return;
 	}
 
-	// Position update
-	if (ReportData->HAT == HAT_TOP_RIGHT || ReportData->HAT == HAT_RIGHT || ReportData->HAT == HAT_BOTTOM_RIGHT)
+	// Position update (diagonal moves will not work since they will ink two dots... is not necessary to test them)
+	if (ReportData->HAT == HAT_RIGHT)
 		xpos++;
-	if (ReportData->HAT == HAT_BOTTOM_LEFT || ReportData->HAT == HAT_LEFT || ReportData->HAT == HAT_TOP_LEFT)
+	else if (ReportData->HAT == HAT_LEFT)
 		xpos--;
-	if (ReportData->HAT == HAT_TOP_LEFT || ReportData->HAT == HAT_TOP || ReportData->HAT == HAT_TOP_RIGHT)
+	else if (ReportData->HAT == HAT_TOP)
 		ypos--;
-	if (ReportData->HAT == HAT_BOTTOM_RIGHT || ReportData->HAT == HAT_BOTTOM || ReportData->HAT == HAT_BOTTOM_LEFT)
+	else if (ReportData->HAT == HAT_BOTTOM)
 		ypos++;
 
-	// Inking
+	// Inking (the printing patterns above will not move outside the canvas... is not necessary to test them)
 	if (state != SYNC_CONTROLLER && state != SYNC_POSITION && state != DONE)
-		if (xpos >= 0 && xpos <= 319 && ypos >= 0 && ypos <= 119)
-			if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
-				ReportData->Button |= SWITCH_A;
+		if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
+			ReportData->Button |= SWITCH_A;
 
 	// Prepare to echo this report
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
