@@ -346,20 +346,22 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		return;
 	}
 
-	// Position update (diagonal moves will not work since they will ink two dots... is not necessary to test them)
-	if (ReportData->HAT == HAT_RIGHT)
-		xpos++;
-	else if (ReportData->HAT == HAT_LEFT)
-		xpos--;
-	else if (ReportData->HAT == HAT_TOP)
-		ypos--;
-	else if (ReportData->HAT == HAT_BOTTOM)
-		ypos++;
-
-	// Inking (the printing patterns above will not move outside the canvas... is not necessary to test them)
 	if (state != SYNC_CONTROLLER && state != SYNC_POSITION && state != DONE)
+	{
+		// Position update (diagonal moves doesn't work since they ink two dots... is not necessary to test them)
+		if (ReportData->HAT == HAT_RIGHT)
+			xpos++;
+		else if (ReportData->HAT == HAT_LEFT)
+			xpos--;
+		else if (ReportData->HAT == HAT_TOP)
+			ypos--;
+		else if (ReportData->HAT == HAT_BOTTOM)
+			ypos++;
+
+		// Inking (the printing patterns above will not move outside the canvas... is not necessary to test them)
 		if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
 			ReportData->Button |= SWITCH_A;
+	}
 
 	// Prepare to echo this report
 	memcpy(&last_report, ReportData, sizeof(USB_JoystickReport_Input_t));
