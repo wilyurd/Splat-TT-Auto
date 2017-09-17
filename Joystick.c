@@ -156,9 +156,6 @@ typedef enum {
 } State_t;
 State_t state = SYNC_CONTROLLER;
 
-// Comment SYNC_TO_30_FPS out for a safer timing when ZIG_ZAG_PRINTING is enabled
-#define SYNC_TO_30_FPS
-
 // Repeat ECHOES times the last sent report.
 //
 // This value is affected by several factors:
@@ -194,6 +191,7 @@ int portsval = 0;
 
 #define max(a, b) (a > b ? a : b)
 #define ms_2_count(ms) (ms / ECHOES / (max(POLLING_MS, 8) / 8 * 8))
+#define is_black(x, y) (pgm_read_byte(&(image_data[((x) / 8) + ((y) * 40)])) & 1 << ((x) % 8))
 
 void complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData)
 {
@@ -214,17 +212,17 @@ void complete_zig_zag_pattern(USB_JoystickReport_Input_t *const ReportData)
 	// to avoid the acceleration triggered by two consecutive moves done in the same
 	// direction. This pattern pass on the same pixel 3 times (N-2, N and N+1), but
 	// is the easiest to check that I found.
-	uint8_t move;
+	uint8_t move_direction;
 
 	if (ypos % 4 < 2)
-		move = HAT_RIGHT;
+		move_direction = HAT_RIGHT;
 	else
-		move = HAT_LEFT;
+		move_direction = HAT_LEFT;
 
 	if (command_count < 642)
 	{
 		if (command_count % 2 == 1)
-			ReportData->HAT = move;
+			ReportData->HAT = move_direction;
 		else if (command_count % 4 == 0)
 			ReportData->HAT = HAT_BOTTOM;
 		else
@@ -359,7 +357,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			ypos++;
 
 		// Inking (the printing patterns above will not move outside the canvas... is not necessary to test them)
-		if (pgm_read_byte(&(image_data[(xpos / 8) + (ypos * 40)])) & 1 << (xpos % 8))
+		if (is_black(xpos, ypos))
 			ReportData->Button |= SWITCH_A;
 	}
 
