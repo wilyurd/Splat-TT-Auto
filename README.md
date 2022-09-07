@@ -18,7 +18,38 @@ The printing goes from top to bottom, alternating between two lines, from left t
 
 Optionally, upon completion, the Teensy's LED will begin flashing. On compatible Arduino boards, some combination of the onboard LEDs will flash. On the UNO, for instance, both TX and RX LEDs will flash, however the other LEDs will not. If this functionality is desired, issue `make with-alert` when building the firmware. All pins on both PORTB and PORTD are toggled! Beware of possible interactions with any attached peripherals, say from another project.
 
-This repository has been tested using a Teensy 2.0++, Arduino UNO R3, and Arduino Micro.
+This repository has been tested using a Teensy 2.0++, Arduino UNO R3, Arduino Micro, and a Pro Micro.
+
+#### Windows: Setting up and using this repo with MYSYS2 MinGW
+If you set up MSYSY2 MinGW correctly, you can do everything except the flashing from it. You won't need to install Python seprately--this method adds it to MSYS2 MinGW!
+[install MYSYS2](https://www.msys2.org/) from their website. Let it open by default or search for and open MSYS2 MinGW 64
+install all dependencies: (the first 13 are from [Pillow's install guide](https://pillow.readthedocs.io/en/stable/installation.html#building-on-windows-using-msys2-mingw); the last three are ones I found missing when trying to compile the hex) (you can copy and paste this entire code block into MinGW)
+```bash
+pacman -S \
+    mingw-w64-x86_64-gcc \
+    mingw-w64-x86_64-python3 \
+    mingw-w64-x86_64-python3-pip \
+    mingw-w64-x86_64-python3-setuptools
+    mingw-w64-x86_64-libjpeg-turbo \
+    mingw-w64-x86_64-zlib \
+    mingw-w64-x86_64-libtiff \
+    mingw-w64-x86_64-freetype \
+    mingw-w64-x86_64-lcms2 \
+    mingw-w64-x86_64-libwebp \
+    mingw-w64-x86_64-openjpeg2 \
+    mingw-w64-x86_64-libimagequant \
+    mingw-w64-x86_64-libraqm \
+    mingw-w64-x86_64-make
+    mingw-w64-x86_64-avr-gcc \
+    mingw-w64-x86_64-avr-libc
+```
+Once all prereqs are in, you can finish installing Pillow for the image handling in png2.py. (these are two separate commands; the first is optional ime)
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install --upgrade Pillow --no-binary :all:
+```
+Now you need to set up your file structure. Download this repo as a zip, extract it, and place it somewhere easy to find--like `C:/splatmeme-printer`. This is the root of the project. Download LUFA as described below in [Flashing for Teensy](https://github.com/esoterictriangle/Splatmeme-Printer#compiling-and-flashing-onto-the-teensy-20), and once extracted place it in your project root folder. Take your prepared 320x120 .png and place it in the root as well.
+Now that you're setup, swap back to MinGW and enter `cd [root folder path]` so you'll be able to execute everything. Run `python3 png2c.py -p [your image].png` to preview what you're going to print. If it looks good, run `python3 png2c.py [your image].png` to replace image.c with your new splatpost. At this point, you can run `mingw32-make` to compile your hex for a Teensy 2.0. If you're using something else (I'm using a Pro Micro!), you'll need to change line 15 in makefile to the appropriate micro controller--for me that's `MCU = atmega32u4`. At this point, your joystick.hex has been made, and you can scroll down to your microcontroller below for instructions on flashing.
 
 #### Compiling and Flashing onto the Teensy 2.0++
 Go to the Teensy website and download/install the [Teensy Loader application](https://www.pjrc.com/teensy/loader.html). For Linux, follow their instructions for installing the [GCC Compiler and Tools](https://www.pjrc.com/teensy/gcc.html). For Windows, you will need the [latest AVR toolchain](http://www.atmel.com/tools/atmelavrtoolchainforwindows.aspx) from the Atmel site. See [this issue](https://github.com/LightningStalker/Splatmeme-Printer/issues/10) and [this thread](http://gbatemp.net/threads/how-to-use-shinyquagsires-splatoon-2-post-printer.479497/) on GBAtemp for more information. (Note for Mac users - the AVR MacPack is now called AVR CrossPack. If that does not work, you can try installing `avr-gcc` with `brew`.)
@@ -41,7 +72,7 @@ Sometimes, the Arduino will show up under a different port, so you may need to r
 
 If you ever need to use your Arduino Micro with Arduino IDE again, the process is somewhat similar. Upload your sketch in the usual way and double tap reset button on the Arduino. It may take several tries and various timings, but should eventually be successful.
 
-The Arduino Leonardo is theoretically compatible, but has not been tested. It also has the ATmega32u4, and is layed out somewhat similar to the Micro.
+The Arduino Leonardo is compatible, but has not been tested. It also has the ATmega32u4 and its rough-equivalent board, the Pro Micro, does work.
 
 #### Attaching the optional buzzer
 A suitable 5V buzzer may be attached to any of the available pins on PORTB or PORTD. When compiled with `make with-alert`, it will begin sounding once printing has finished. See above warning about PORTB and PORTD. Reference section 31 of [the AT90USB1286 datasheet](http://www.atmel.com/images/doc7593.pdf) for maximum current specs.
