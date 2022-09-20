@@ -286,7 +286,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 		else
 		{
 			if (command_count == ms_2_count(500) || command_count == ms_2_count(1000))
-				ReportData->Button |= SWITCH_L | SWITCH_R;
+				ReportData->Button |= SWITCH_L;
 			else if (command_count == ms_2_count(1500) || command_count == ms_2_count(2000))
 				ReportData->Button |= SWITCH_A;
 			command_count++;
@@ -311,7 +311,7 @@ void GetNextReport(USB_JoystickReport_Input_t *const ReportData)
 			ReportData->LY = STICK_MIN;
 			// Clear the screen
 			if (command_count == ms_2_count(1500) || command_count == ms_2_count(3000))
-				ReportData->Button |= SWITCH_MINUS;
+				ReportData->Button |= SWITCH_LCLICK;
 			command_count++;
 		}
 		break;
