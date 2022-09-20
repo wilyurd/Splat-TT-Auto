@@ -22,8 +22,10 @@ This repository has been tested using a Teensy 2.0++, Arduino UNO R3, Arduino Mi
 
 #### Windows: Setting up and using this repo with MYSYS2 MinGW
 If you set up MSYSY2 MinGW correctly, you can do everything except the flashing from it. You won't need to install Python seprately--this method adds it to MSYS2 MinGW!
+
 [install MYSYS2](https://www.msys2.org/) from their website. Let it open by default or search for and open MSYS2 MinGW 64
-install all dependencies: (the first 13 are from [Pillow's install guide](https://pillow.readthedocs.io/en/stable/installation.html#building-on-windows-using-msys2-mingw); the last three are ones I found missing when trying to compile the hex) (you can copy and paste this entire code block into MinGW)
+
+install all dependencies: (the first 13 are from [Pillow's install guide](https://pillow.readthedocs.io/en/stable/installation.html#building-on-windows-using-msys2-mingw); the last three are ones I found missing when trying to compile the hex) (you can copy and paste this entire code block into MinGW--shift + ins or right click in the terminal and choose paste)
 ```bash
 pacman -S \
     mingw-w64-x86_64-gcc \
@@ -49,6 +51,7 @@ python3 -m pip install --upgrade pip
 python3 -m pip install --upgrade Pillow --no-binary :all:
 ```
 Now you need to set up your file structure. Download this repo as a zip, extract it, and place it somewhere easy to find--like `C:/splatmeme-printer`. This is the root of the project. Download LUFA as described below in [Flashing for Teensy](https://github.com/esoterictriangle/Splatmeme-Printer#compiling-and-flashing-onto-the-teensy-20), and once extracted place it in your project root folder. Take your prepared 320x120 .png and place it in the root as well.
+
 Now that you're setup, swap back to MinGW and enter `cd [root folder path]` so you'll be able to execute everything. Run `python3 png2c.py -p [your image].png` to preview what you're going to print. If it looks good, run `python3 png2c.py [your image].png` to replace image.c with your new splatpost. At this point, you can run `mingw32-make` to compile your hex for a Teensy 2.0. If you're using something else (I'm using a Pro Micro!), you'll need to change line 15 in makefile to the appropriate micro controller--for me that's `MCU = atmega32u4`. At this point, your joystick.hex has been made, and you can scroll down to your microcontroller below for instructions on flashing.
 
 #### Compiling and Flashing onto the Teensy 2.0++
